@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>涂泊酒店营收台账</title>
+  <!-- 页面样式（两个页面共用） -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ======================= 1. 顶部标题栏 ======================= -->
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <h1 class="brand-name"><span id="hotelName">涂泊酒店</span><small id="branchName">南宁东站店</small></h1>
+      <div class="brand-sub">每日营收台账 · 前台</div>
+    </div>
+    <div class="topbar-meta">
+      <span>今天 <b id="todayLabel">—</b></span>
+      <span>总客房数 <b><span id="totalRoomsLabel">68</span> 间</b></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="storageBanner" hidden>
+    浏览器存储不可用（可能是无痕模式或禁用了网站数据），本次录入的数据在关闭页面后会丢失。请换用普通窗口打开，并及时导出 Excel。
+  </div>
+
+  <!-- ======================= 2. 营业日指标 ======================= -->
+  <section aria-labelledby="statsTitle">
+    <div class="section-label"><h2 id="statsTitle">营业日指标</h2><span id="statsHint"></span></div>
+    <div class="stats">
+      <div class="stat is-key">
+        <div class="stat-label" id="statRevenueLabel">今日总营收</div>
+        <div class="stat-value" id="statTodayRevenue">—</div>
+        <div class="stat-foot" id="statTodayFoot">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">本月累计营收</div>
+        <div class="stat-value" id="statMonthRevenue">—</div>
+        <div class="stat-foot" id="statMonthFoot">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><span id="statOccLabel">今日入住率</span> <span class="stat-code">OCC</span></div>
+        <div class="stat-value" id="statTodayOcc">—</div>
+        <div class="stat-foot" id="statOccFoot">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><span id="statAdrLabel">今日平均房价</span> <span class="stat-code">ADR</span></div>
+        <div class="stat-value" id="statTodayAdr">—</div>
+        <div class="stat-foot" id="statAdrFoot">酒店系统数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><span id="statReconLabel">今日交班对账</span></div>
+        <div class="stat-value" id="statRecon">—</div>
+        <div class="stat-foot" id="statReconFoot">早班 + 晚班收款 对比 前台应收</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 本月至今 vs 去年同月 ======================= -->
+  <section aria-labelledby="yoyTitle">
+    <div class="section-label"><h2 id="yoyTitle">本月至今 vs 去年同月</h2><span id="yoyHint"></span></div>
+    <div class="yoy">
+      <div class="yoy-grid" id="yoyGrid"></div>
+      <div class="yoy-note" id="yoyNote"></div>
+    </div>
+  </section>
+
+  <!-- ======================= 3. 主体左右分栏 ======================= -->
+  <div class="columns">
+
+    <!-- ---------- 左侧：录入（两个页签） ---------- -->
+    <section class="panel" aria-label="录入">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tabDaily" aria-selected="true" aria-controls="paneDaily">每日营收</button>
+        <button type="button" role="tab" id="tabShift" aria-selected="false" aria-controls="paneShift">交班收款</button>
+        <button type="button" role="tab" id="tabCash" aria-selected="false" aria-controls="paneCash">现金押金</button>
+      </div>
+
+      <!-- 页签一：每日营收 -->
+      <div class="panel-body" id="paneDaily" role="tabpanel" aria-labelledby="tabDaily">
+        <div class="edit-banner" id="editBanner" hidden>
+          <span id="editBannerText">正在编辑</span>
+          <button type="button" class="btn-link" id="btnCancelEdit">取消编辑</button>
+        </div>
+
+        <form id="revenueForm" class="form-grid" novalidate>
+          <div class="field">
+            <label for="fDate">营业日期</label>
+            <input class="input" type="date" id="fDate" required>
+            <p class="field-note" id="dateNote"></p>
+            <p class="field-error" data-error-for="fDate"></p>
+          </div>
+
+          <div class="group-title">运营数据</div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fRoomSold">出租客房数 <span class="hint">间</span></label>
+              <input class="input" type="number" id="fRoomSold" min="0" step="1" inputmode="numeric" placeholder="例如 58">
+              <p class="field-error" data-error-for="fRoomSold"></p>
+            </div>
+            <div class="field">
+              <label for="fAdr">平均房价 <span class="hint">照系统填</span></label>
+              <div class="money"><input class="input" type="number" id="fAdr" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <p class="field-error" data-error-for="fAdr"></p>
+            </div>
+          </div>
+          <p class="field-help" id="adrHelp">房费合计 ÷ 出租间数 = —（仅供核对）</p>
+
+          <div class="group-title">房费收入（按渠道）<span class="sub" id="subRoom">¥0.00</span></div>
+          <div class="field-row" id="roomChannelFields"></div>
+
+          <div class="group-title">非房费收入<span class="sub" id="subNonRoom">¥0.00</span></div>
+          <div class="field-row" id="nonRoomFields"></div>
+
+          <div class="group-title">明细表核对</div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fSysDetail">系统明细表金额 <span class="hint">选填</span></label>
+              <div class="money"><input class="input" type="number" id="fSysDetail" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <p class="field-error" data-error-for="fSysDetail"></p>
+            </div>
+            <div class="field" style="justify-content:center">
+              <p class="field-help" id="detailHelp">填入系统明细表的当日合计，自动和「营收表小计」核对。</p>
+            </div>
+          </div>
+
+          <div class="live-total" aria-live="polite">
+            <div class="row"><span>房费收入</span><b id="liveRoom">¥0.00</b></div>
+            <div class="row"><span>非房费收入</span><b id="liveNonRoom">¥0.00</b></div>
+            <div class="row"><span>营收表小计（美团 … 税点）</span><b id="liveSubtotal">¥0.00</b></div>
+            <div class="row" id="liveDetailRow"><span>小计 − 明细表</span><b id="liveDetailDiff">未填明细表</b></div>
+            <div class="row"><span>前台应收（交班对账用）</span><b id="liveDesk">¥0.00</b></div>
+            <div class="row total"><span>当日总营收</span><b id="liveTotal">¥0.00</b></div>
+          </div>
+
+          <div class="field">
+            <label for="fRemark">备注 <span class="hint">选填</span></label>
+            <textarea class="input" id="fRemark" rows="2" maxlength="500" placeholder="例如：团队入住 12 间；803 空调维修停售"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary btn-block" id="btnSubmit">保存营收</button>
+            <button type="button" class="btn-link" id="btnReset">清空表单</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 页签二：交班收款 -->
+      <div class="panel-body" id="paneShift" role="tabpanel" aria-labelledby="tabShift" hidden>
+        <form id="shiftForm" class="form-grid" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="sDate">营业日期</label>
+              <input class="input" type="date" id="sDate" required>
+              <p class="field-error" data-error-for="sDate"></p>
+            </div>
+            <div class="field">
+              <span class="group-title" style="margin-top:0">班次</span>
+              <div class="seg big" id="shiftSeg" role="group" aria-label="班次"></div>
+            </div>
+          </div>
+          <p class="field-note" id="shiftNote"></p>
+
+          <div class="field">
+            <label for="sStaff">交班人 <span class="hint">选填</span></label>
+            <input class="input" type="text" id="sStaff" maxlength="20" placeholder="例如：小王">
+          </div>
+
+          <div class="group-title">本班收款（按收款方式）<span class="sub" id="shiftSub">¥0.00</span></div>
+          <div class="field-row" id="payFields"></div>
+
+          <div class="live-total" aria-live="polite" id="reconBox"></div>
+
+          <div class="field">
+            <label for="sRemark">备注 <span class="hint">选填</span></label>
+            <textarea class="input" id="sRemark" rows="2" maxlength="300" placeholder="例如：挂账 301 房 2 晚，公司月结"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary btn-block" id="btnShiftSubmit">保存交班</button>
+            <button type="button" class="btn-link" id="btnShiftDelete" hidden>删除本班记录</button>
+          </div>
+        </form>
+      </div>
+      <!-- 页签三：现金押金 + 备用金 -->
+      <div class="panel-body" id="paneCash" role="tabpanel" aria-labelledby="tabCash" hidden>
+        <form id="cashForm" class="form-grid" novalidate>
+          <div class="field">
+            <label for="cDate">营业日期</label>
+            <input class="input" type="date" id="cDate" required>
+            <p class="field-note" id="cashNote"></p>
+          </div>
+          <div class="group-title">现金收入</div>
+          <div class="field-row">
+            <div class="field">
+              <span class="group-title" style="margin-top:0">门店现金 <span class="hint" style="font-weight:400">取自当日营收</span></span>
+              <b class="num" id="cashStore" style="font-size:var(--fs-lg);padding:6px 0">—</b>
+            </div>
+          </div>
+          <div class="field-row" id="cashFields"></div>
+          <div class="field-row">
+            <div class="field">
+              <label for="c_cashRefund">现金退款</label>
+              <div class="money"><input class="input" type="number" id="c_cashRefund" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <p class="field-error" data-error-for="c_cashRefund"></p>
+            </div>
+          </div>
+          <div class="live-total" aria-live="polite">
+            <div class="row"><span>现金合计</span><b id="cashTotal">¥0.00</b></div>
+            <div class="row"><span>现金退款</span><b id="cashRefundShow">¥0.00</b></div>
+            <div class="row total"><span>现金投款（合计 − 退款）</span><b id="cashDeposit">¥0.00</b></div>
+          </div>
+          <div class="field">
+            <label for="cRemark">备注 <span class="hint">选填</span></label>
+            <input class="input" type="text" id="cRemark" maxlength="200" placeholder="例如：退 302 房押金 200 元">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="btnCashSave">保存现金</button>
+        </form>
+
+        <div class="group-title" style="margin-top:22px">本月现金汇总 <span class="sub" id="cashMonthLabel"></span></div>
+        <div class="table-scroll" style="margin-top:8px;max-height:380px;overflow-y:auto;border:1px solid var(--line);border-radius:6px"><table class="grid-table" id="cashMonthTable" style="font-size:var(--fs-sm)"></table></div>
+
+        <div class="group-title" style="margin-top:22px">备用金</div>
+        <form id="pettyForm" class="form-grid" novalidate style="margin-top:8px">
+          <div class="field-row">
+            <div class="field"><label for="pStart">起始日期</label><input class="input" type="date" id="pStart"></div>
+            <div class="field"><label for="pEnd">结束日期</label><input class="input" type="date" id="pEnd"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="pDiff">盘点差额 <span class="hint">短少填负数</span></label>
+              <div class="money"><input class="input" type="number" id="pDiff" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <p class="field-error" data-error-for="pDiff"></p>
+            </div>
+            <div class="field">
+              <label for="pTopup">已补备用金</label>
+              <div class="money"><input class="input" type="number" id="pTopup" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+              <p class="field-error" data-error-for="pTopup"></p>
+            </div>
+          </div>
+          <div class="field"><label for="pRemark">备注 <span class="hint">选填</span></label><input class="input" type="text" id="pRemark" maxlength="200"></div>
+          <button type="submit" class="btn btn-block">添加备用金记录</button>
+        </form>
+        <ul class="notes" id="pettyList" style="margin-top:12px"></ul>
+      </div>
+
+    </section>
+
+    <!-- ---------- 右侧：每日记录 ---------- -->
+    <section class="panel" aria-labelledby="listTitle">
+      <div class="panel-head">
+        <h2 class="panel-title" id="listTitle">每日记录</h2>
+        <div class="filter">
+          <label for="filterMonth">筛选月份</label>
+          <input class="input" type="month" id="filterMonth">
+          <button type="button" class="btn btn-sm" id="btnThisMonth">回到本月</button>
+        </div>
+      </div>
+      <div class="month-summary" id="monthSummary"></div>
+      <div id="listContainer"></div>
+    </section>
+  </div>
+
+  <!-- ======================= 月度对比 ======================= -->
+  <section class="panel" aria-labelledby="trendTitle">
+    <div class="panel-head">
+      <h2 class="panel-title" id="trendTitle">月度对比</h2>
+      <div class="filter">
+        <div class="seg" id="metricSeg" role="group" aria-label="选择指标"></div>
+        <label for="yearSelect">年份</label>
+        <select class="input" id="yearSelect"></select>
+      </div>
+    </div>
+    <div class="chart-legend" id="chartLegend"></div>
+    <div class="chart-wrap" id="chartWrap">
+      <svg id="trendChart" role="img" aria-labelledby="trendTitle"></svg>
+      <div class="chart-tip" id="chartTip" hidden></div>
+    </div>
+    <div class="table-scroll" style="border-top:1px solid var(--line)">
+      <table class="grid-table monthly" id="monthlyTable"></table>
+    </div>
+  </section>
+
+  <!-- ======================= 星期规律 ======================= -->
+  <section class="panel" aria-labelledby="weekTitle">
+    <div class="panel-head">
+      <h2 class="panel-title" id="weekTitle">星期规律 · 日均房费收入</h2>
+      <div class="seg" id="weekSeg" role="group" aria-label="统计范围"></div>
+    </div>
+    <div class="chart-wrap" id="weekWrap">
+      <svg id="weekChart" role="img" aria-labelledby="weekTitle"></svg>
+      <div class="chart-tip" id="weekTip" hidden></div>
+    </div>
+    <div class="panel-foot" id="weekNote"></div>
+  </section>
+
+  <!-- ======================= 4. 底部 ======================= -->
+  <section class="panel footer-panel" aria-labelledby="exportTitle">
+    <div class="panel-head"><h2 class="panel-title" id="exportTitle">导出与说明</h2></div>
+    <div class="panel-body">
+      <div class="export-box">
+        <button type="button" class="btn btn-primary" id="btnExport">导出当月 Excel</button>
+        <div class="export-file">将导出：<span id="exportFileName">—</span></div>
+      </div>
+      <ul class="notes">
+        <li>数据只保存在<b>这台电脑的这个浏览器</b>里，清理浏览器缓存会丢失。请<b>每周导出一次 Excel</b>，月底把整月 Excel 发给店长做利润表。</li>
+        <li>同一天只保留一条营收记录；同一天的早班、晚班各一条交班记录，再保存会更新原来的数据。</li>
+        <li>交班对账：早班 + 晚班收款合计，应等于当天「前台应收」（<span id="deskItemsNote"></span>）。</li>
+        <li>入住率 = 出租客房数 ÷ <span id="totalRoomsNote">68</span> 间；平均房价按酒店系统数填写；RevPAR = 平均房价 × 入住率。</li>
+        <li>2025 年 1 月至 2026 年 8 月：月度数据来自酒店利润表，每日数据来自营收表（只有收入，没有出租间数）。</li>
+        <li>明细表核对：营收表小计（美团、携程、门店POS机、门店现金、飞猪、抖音、华佗、小商品POS机、早餐收入、发票税点）应等于系统明细表金额。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- Excel 组件 SheetJS（固定版本，需联网） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- 历史月度营收数据（来自利润表） -->
+<script src="data.js"></script>
+<!-- 历史每日营收（来自营收表） -->
+<script src="daily-data.js"></script>
+<!-- 共用代码 -->
+<script src="common.js"></script>
+<!-- 本页功能 -->
+<script src="script.js"></script>
+</body>
+</html>
